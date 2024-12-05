@@ -1,37 +1,25 @@
-from typing import Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from geopy import Point
 from config import ureg
 from .aircraft import Aircraft
+from pyairports.airports import Airports, Airport
 
 
 class Flight(BaseModel):
-    # Начальная точка полета (может быть объектом Point или кортежем с координатами)
-    start_point: Point | tuple[float, float]
+    start_point: Point = Field(default=Point(0, 0))
+    end_point: Point = Field(default=Point(0, 0))
+    airport_from: Airport | str
+    airport_to: Airport | str
 
-    # Конечная точка полета (может быть объектом Point или кортежем с координатами)
-    end_point: Point | tuple[float, float]
-
-    # Скорость набора высоты (в футах в минуту). Значение по умолчанию: 2000 футов в минуту.
     climb_rate: ureg.Quantity | int = ureg.Quantity(2000, 'foot/minute')
-
-    # Скорость снижения высоты (в футах в минуту). Значение по умолчанию: 1500 футов в минуту.
     descent_rate: ureg.Quantity | int = ureg.Quantity(1500, 'foot/minute')
 
-    # Крейсерская высота (в футах). Значение по умолчанию: 36000 футов.
     cruise_altitude: ureg.Quantity | int = ureg.Quantity(36000, 'foot')
-
-    # Крейсерская скорость (в километрах в час). Значение по умолчанию: 840 км/ч.
     cruise_speed: ureg.Quantity | int = ureg.Quantity(840, 'km/h')
 
-    # Экземпляр класса Aircraft, представляющий самолет, выполняющий полет.
     aircraft: Aircraft
-
-    # Скорость для начальной фазы набора высоты. Если не указано, используется скорость взлета самолета.
-    initial_climb_speed: Optional[ureg.Quantity | int] = None
-
-    # Скорость посадки. Если не указано, используется посадочная скорость самолета.
-    landing_speed: Optional[ureg.Quantity | int] = None
+    initial_climb_speed: ureg.Quantity | int | None = None
+    landing_speed: ureg.Quantity | int | None = None
 
     def __init__(self, /, **data):
         super().__init__(**data)
@@ -40,10 +28,14 @@ class Flight(BaseModel):
         if self.landing_speed is None:
             self.landing_speed = self.aircraft.landing_speed
 
-    @field_validator('start_point', 'end_point')
-    def convert_to_point(cls, value: any):  # noqa
-        if isinstance(value, tuple):
-            return Point(value[0], value[1])
+        self.start_point = Point(float(self.airport_from.lat), float(self.airport_from.lon))
+        self.end_point = Point(float(self.airport_to.lat), float(self.airport_to.lon))
+
+    @field_validator('airport_from', 'airport_to', mode='before')
+    def convert_to_airport(cls, value: any):  # noqa
+        if isinstance(value, str):
+            airports = Airports()
+            return airports.airport_iata(value)
         return value
 
     @field_validator('cruise_altitude')

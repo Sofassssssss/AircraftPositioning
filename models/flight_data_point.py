@@ -4,15 +4,10 @@ from geopy import Point
 
 
 class FlightDataPoint(BaseModel):
-    class FlightDataPoint(BaseModel):
-        # Время метки (timestamp) в секундах. Может быть передано как целое число или как объект ureg.Quantity.
-        timestamp: ureg.Quantity | int
-
-        # Позиция (широта, долгота) в виде объекта Point или кортежа с двумя числами (широта, долгота).
-        position: Point | tuple[float, float]
-
-        # Высота (altitude), измеряемая в футах. Может быть передана как целое число или как объект ureg.Quantity.
-        altitude: ureg.Quantity | int
+    timestamp: ureg.Quantity | int
+    position: Point | tuple[float, float]
+    altitude: ureg.Quantity | int
+    heading: float
 
     @field_validator('timestamp')
     def convert_to_second(cls, value: any):  # noqa
@@ -34,7 +29,16 @@ class FlightDataPoint(BaseModel):
 
     def __str__(self):
         return (f'{self.timestamp.magnitude},"{self.position.latitude},{self.position.longitude}",'
-                f'{int(self.altitude.magnitude) if isinstance(self.altitude, ureg.Quantity) else self.altitude}')
+                f'{int(self.altitude.magnitude) if isinstance(self.altitude, ureg.Quantity) else self.altitude},'
+                f'{int(self.heading)}')
+
+    def to_dict(self) -> dict[str, any]:
+        return {
+            'timestamp': self.timestamp.magnitude,
+            'position': f'{self.position.latitude},{self.position.longitude}',
+            'altitude': int(self.altitude.magnitude),
+            'heading': int(self.heading)
+        }
 
     class Config:
         arbitrary_types_allowed = True

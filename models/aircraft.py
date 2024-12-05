@@ -3,22 +3,11 @@ from config import ureg
 
 
 class Aircraft(BaseModel):
-    # Максимальная высота, на которой может работать самолет (в футах)
     max_altitude: ureg.Quantity | int
-
-    # Максимальная скорость подъема (в футах в минуту)
     max_climb_rate: ureg.Quantity | int
-
-    # Максимальная скорость спуска (в футах в минуту)
     max_descent_rate: ureg.Quantity | int
-
-    # Максимальная скорость полета (в километрах в час)
     max_speed: ureg.Quantity | int
-
-    # Скорость взлета (в километрах в час)
     takeoff_speed: ureg.Quantity | int
-
-    # Скорость посадки (в километрах в час)
     landing_speed: ureg.Quantity | int
 
     @field_validator('max_altitude')
