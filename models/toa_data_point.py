@@ -14,12 +14,12 @@ class ToaDataPoint(BaseModel):
         return value * ureg.second
 
     def __str__(self):
-        timestamp = self.timestamp.to("second").magnitude
+        timestamp_str = f"{self.timestamp.to('second').magnitude}"
         signal_time_str = ",".join(
             f"{k}:{format_float_positional(v.to('second').magnitude)}"
             for k, v in self.signal_time.items()
         )
-        return f"{timestamp},[{signal_time_str}]"
+        return f"{timestamp_str},[{signal_time_str}]"
 
     def to_dict(self) -> dict[str, any]:
         d: dict[str | int, any] = {'timestamp': self.timestamp.to('second').magnitude}

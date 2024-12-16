@@ -3,7 +3,8 @@ from geopy.distance import geodesic
 from geopy import Point
 from config import ureg, MIN_RECEIVERS, DEFAULT_RECEIVERS, RECEIVER_MAX_OFFSET
 from models import FlightDataPoint, Flight, SimulationParameters, Receiver, ToaDataPoint
-
+positions = [(-1500000.0, 400000.0), (2000000.0, -3000000.0), (-5000000.0, 12000000.0), (11000000.0, -4000000.0)]
+altitudes = [3937008, 0, -2952760, 6561680]
 
 def calculate_azimuth(first: Point, second: Point) -> float:
     f_lat, f_lon = np.radians(first.latitude), np.radians(first.longitude)
@@ -13,7 +14,7 @@ def calculate_azimuth(first: Point, second: Point) -> float:
 
     x = np.sin(d_lon) * np.cos(s_lat)
     y = np.cos(f_lat) * np.sin(s_lat) - np.sin(f_lat) * np.cos(s_lat) * np.cos(d_lon)
-    return (np.degrees(np.atan2(x, y)) + 360) % 360
+    return (np.degrees(np.arctan2(x, y)) + 360) % 360
 
 
 class Simulation:
@@ -89,7 +90,7 @@ class Simulation:
 
         while current_time <= segment_time:
             azimuth = calculate_azimuth(current_position, end_position)
-            current_altitude = min(current_time,vertical_speed *
+            current_altitude = min(vertical_speed * current_time,
                                    self.flight.cruise_altitude) if vertical_speed > 0 else self.flight.cruise_altitude
 
             # Линейно увеличиваем горизонтальную скорость самолёта
@@ -120,18 +121,21 @@ class Simulation:
         self.receivers.clear()
 
         # Определим индексы точек, возле которых будем ставить приёмники, возьмём равномерно
-        indices: np.ndarray = np.linspace(0, len(self.trajectory) - 1, count, dtype=int)
+        indices: np.ndarray = np.linspace(0, len(self.trajectory) - 1, count)
+        k = 0
         for i in indices:
             # Сместим приёмник в случайном направлении на 0-250 км от точки
             offset: ureg.Quantity = RECEIVER_MAX_OFFSET.to('km') * np.random.random_sample()
             bearing: int = np.random.randint(0, 360)
 
-            self.receivers[i] = Receiver(
-                position=geodesic(kilometers=offset.to('km').magnitude)
-                .destination(self.trajectory[i].position, bearing=bearing),
-                altitude=np.random.randint(0, 1500)
+            self.receivers[int(i)] = Receiver(
+                #position=geodesic(kilometers=offset.to('km').magnitude)
+                #                .destination(self.trajectory[int(i)].position, bearing=bearing),
+                position=positions[k],
+                altitude=altitudes[k]
+                #altitude=np.random.randint(0, 1500)
             )
-
+            k+=1
     # Рассчитывает TOA до каждого приёмника для всех точек в траектории
     def _calculate_toa(self) -> None:
         toa_list: list[ToaDataPoint] = []
